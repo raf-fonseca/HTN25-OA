@@ -11,13 +11,20 @@ assumption:
 
 Good luck!
 
-# To view data table
 
-- docker exec -it api bash
-- sqlite3 /db/hackers.db
-- .mode column -- Makes output columnar (like Excel)
-- .headers on -- Shows column headers
-- .width AUTO -- Automatically adjusts column widths
-- SELECT \* FROM hackers;
-- SELECT \* FROM scans;
-- SELECT \* FROM activities;
+
+sqlite3 /db/hackers.db
+
+-- Then try these commands:
+
+.mode column   -- Makes output columnar (like Excel)
+.headers on    -- Shows column headers
+.width AUTO    -- Automatically adjusts column widths
+
+-- Now you can run your queries and they'll be nicely formatted:
+SELECT * FROM hackers;
+
+-- Other useful commands:
+.tables        -- Lists all tables in the database
+.schema       -- Shows the CREATE statements for all tables
+.mode box   

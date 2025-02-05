@@ -9,8 +9,11 @@ RUN mkdir -p /db && chmod 777 /db
 RUN mkdir -p /home/api
 WORKDIR /home/api
 
-# Copy and install requirements
+# Copy application code
 COPY requirements.txt .
+COPY app/ ./app/
+COPY main.py .
+
 RUN pip3 install -r requirements.txt
 
 EXPOSE 3000
