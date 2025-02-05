@@ -1,4 +1,4 @@
-from graphene import ObjectType, String, List
+from graphene import ObjectType, String, List, InputObjectType, Mutation
 
 class Scan(ObjectType):
     activity_name = String()
@@ -15,4 +15,8 @@ class User(ObjectType):
 
     def resolve_scans(self, info):
         from app.database.models import get_user_scans
-        return get_user_scans(self.email) 
+        return get_user_scans(self.email)
+
+class UpdateUserInput(InputObjectType):
+    name = String()
+    phone = String() 
