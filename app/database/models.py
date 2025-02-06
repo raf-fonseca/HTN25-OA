@@ -200,3 +200,57 @@ def create_scan(email, data):
             conn.rollback()
             raise e
 
+
+def get_scan_statistics(min_frequency=None, max_frequency=None, activity_category=None, cache_duration_minutes=5):
+    """Get scan statistics with caching and filtering"""
+    global _stats_cache
+    
+    # Check if we have valid cached data
+    now = datetime.now()
+    if (_stats_cache['data'] is not None and 
+        _stats_cache['last_updated'] is not None and 
+        now - _stats_cache['last_updated'] < timedelta(minutes=cache_duration_minutes)):
+        data = _stats_cache['data']
+    else:
+        # Cache miss or expired, fetch new data
+        with sqlite3.connect('/db/hackers.db') as conn:
+            c = conn.cursor()
+            
+            # Get base statistics
+            c.execute('''
+                SELECT 
+                    a.activity_name,
+                    a.activity_category,
+                    COUNT(s.id) as scan_count
+                FROM activities a
+                LEFT JOIN scans s ON a.id = s.activity_id
+                GROUP BY a.id, a.activity_name, a.activity_category
+                ORDER BY scan_count DESC, a.activity_name
+            ''')
+            
+            data = [
+                {
+                    'activity_name': row[0],
+                    'activity_category': row[1],
+                    'scan_count': row[2]
+                }
+                for row in c.fetchall()
+            ]
+            
+            # Update cache
+            _stats_cache['data'] = data
+            _stats_cache['last_updated'] = now
+    
+    # Apply filters to cached data
+    filtered_data = data
+    
+    if min_frequency is not None:
+        filtered_data = [d for d in filtered_data if d['scan_count'] >= min_frequency]
+        
+    if max_frequency is not None:
+        filtered_data = [d for d in filtered_data if d['scan_count'] <= max_frequency]
+        
+    if activity_category is not None:
+        filtered_data = [d for d in filtered_data if d['activity_category'] == activity_category]
+    
+    return filtered_data

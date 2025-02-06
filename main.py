@@ -48,6 +48,28 @@ def scan_route(email):
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/scans', methods=['GET'])
+def get_scan_stats():
+    try:
+        # Parse query parameters
+        min_frequency = request.args.get('min_frequency', type=int)
+        max_frequency = request.args.get('max_frequency', type=int)
+        activity_category = request.args.get('activity_category')
+
+        stats = get_scan_statistics(
+            min_frequency=min_frequency,
+            max_frequency=max_frequency,
+            activity_category=activity_category
+        )
+
+        return jsonify({
+            'activities': stats,
+            'total_activities': len(stats),
+            'cached_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 
 # Initialize database when the app starts
