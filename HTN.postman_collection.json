@@ -7,7 +7,7 @@
 	},
 	"item": [
 		{
-			"name": "All users",
+			"name": "Get All Users",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -17,17 +17,27 @@
 			"response": []
 		},
 		{
-			"name": "User by email",
+			"name": "Get ?checked_in=False",
 			"request": {
 				"method": "GET",
 				"header": [],
-				"url": "http://localhost:3000/users/john@example.com",
+				"url": "http://localhost:3000/users",
+				"description": "Generated from cURL: curl http://localhost:3000/users"
+			},
+			"response": []
+		},
+		{
+			"name": "User By Email",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:3000/users/fward@example.org",
 				"description": "Generated from cURL: curl http://localhost:3000/users/john@example.com"
 			},
 			"response": []
 		},
 		{
-			"name": "Update user info ",
+			"name": "Update User Info (All Fields)",
 			"request": {
 				"method": "PUT",
 				"header": [
@@ -38,20 +48,20 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    // \"name\": \"John Smith 123\"\n    // \"phone\": \"+1 (555) 123 4567\"\n    \"email\": \"example@gmail.com\"\n}",
+					"raw": "{   \n    \"name\": \"John Smith 123\", \n    \"phone\": \"+1 (555) 123 4567\",\n    \"badge_code\": \"testing-blah-blah-blah\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
 						}
 					}
 				},
-				"url": "http://localhost:3000/users/{{email}}",
-				"description": "Generated from cURL: curl -X PUT http://localhost:3000/users/john@example.com \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\": \"John Smith\", \"phone\": \"+1 (555) 123 4567\"}'"
+				"url": "http://localhost:3000/users/fward@example.org",
+				"description": "Generated from cURL: curl --location --request PUT 'http://localhost:3000/users/fward@example.org' \\\n--header 'Content-Type: application/json' \\\n--data '{   \n    \"name\": \"John Smith 123\", \n    \"phone\": \"+1 (555) 123 4567\",\n    \"badge_code\": \"testing-blah-blah-blah\"\n}'"
 			},
 			"response": []
 		},
 		{
-			"name": "New scan ",
+			"name": "Update User Info (Partial Fields)",
 			"request": {
 				"method": "PUT",
 				"header": [
@@ -62,20 +72,44 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n    \"activity_name\": \"Lunch\",\n    \"activity_category\": \"meal\"\n  }",
+					"raw": "{   \n    \"name\": \"John Smith 123\", \n    \"badge_code\": \"testing-blah-blah-blah\"\n}",
 					"options": {
 						"raw": {
 							"language": "json"
 						}
 					}
 				},
-				"url": "http://localhost:3000/scan/john@example.com",
+				"url": "http://localhost:3000/users/fward@example.org",
+				"description": "Generated from cURL: curl --location --request PUT 'http://localhost:3000/users/fward@example.org' \\\n--header 'Content-Type: application/json' \\\n--data '{   \n    \"name\": \"John Smith 123\", \n    \"badge_code\": \"testing-blah-blah-blah\"\n}'\n"
+			},
+			"response": []
+		},
+		{
+			"name": "New Scan",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    // Running twice will cause an error \n    \"activity_name\": \"Lunch\",\n    \"activity_category\": \"meal\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:3000/scan/fward@example.org",
 				"description": "Generated from cURL: curl -X PUT http://localhost:3000/scan/john@example.com \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"activity_name\": \"Lunch\",\n    \"activity_category\": \"meal\"\n  }'"
 			},
 			"response": []
 		},
 		{
-			"name": "Scan data ",
+			"name": "Get Scan Data",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -97,6 +131,45 @@
 					]
 				},
 				"description": "Generated from cURL: curl http://localhost:3000/scans?min_frequency=5"
+			},
+			"response": []
+		},
+		{
+			"name": "Check-in User",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"name\": \"John Smith\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"+1 (555) 123-4567\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:3000/checkin",
+				"description": "Generated from cURL: curl -X PUT http://localhost:3000/checkin \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"name\": \"John Smith\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"+1 (555) 123-4567\"\n  }'"
+			},
+			"response": []
+		},
+		{
+			"name": "Check-out User",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"url": "http://localhost:3000/checkout/john@example.com",
+				"description": "Generated from cURL: curl -X PUT http://localhost:3000/checkout/john@example.com \\\n  -H \"Content-Type: application/json\""
 			},
 			"response": []
 		}

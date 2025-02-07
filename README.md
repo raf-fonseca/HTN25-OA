@@ -8,7 +8,12 @@ hacker information.
 
 1. Install Docker and Docker Compose
 2. Clone this repository
-3. Start the application:
+3. Import `postman_collection.json` into Postman:
+   - Open Postman
+   - Click "Import" button (top left)
+   - Drag and drop `HTN.postman_collection.json` or browse to select it
+   - Click "Import" to add the collection
+4. Start the application:
 
 ```bash
 docker-compose up --build
@@ -67,7 +72,6 @@ Checked In Users.
 
 - `id` (int): Primary key, auto-incrementing identifier
 - `hacker_id` (int): Foreign key to Hackers table, unique
-- `checked_in_at` (timestamp): When user was checked in
 - Foreign Keys:
   - `hacker_id` references `hackers(id)`
 
@@ -80,6 +84,8 @@ Checked In Users.
 
 ## API Endpoints
 
+### User Management
+
 `GET /users`
 
 Returns list of all users with their scan history. Supports filtering by
@@ -91,12 +97,6 @@ Query Parameters:
   - `true`: Returns only users who have checked in
   - `false`: Returns only users who have not checked in
   - If omitted, returns all users
-
-Example Request:
-
-```
-/users?checked_in=true
-```
 
 Example Response:
 
@@ -126,12 +126,6 @@ Example Response:
 Returns specific user's data and scan history. Returns 404 if user does not
 exist.
 
-Example Request:
-
-```
-/users/fward@example.org
-```
-
 Example Response:
 
 ```json
@@ -157,7 +151,7 @@ Example Response:
 }
 ```
 
-#### PUT /users/<email>
+`PUT /users/<email>`
 
 Updates user information. Returns 404 if user does not exist.
 
@@ -173,23 +167,68 @@ curl -X PUT http://localhost:3000/users/nancy02@example.com \
   }'
 ```
 
+`PUT /scan/<email>`
+
+Records a new scan. Returns 404 if user already scanned for the activity.
+
+Example Request:
+
+```bash
+curl -X PUT http://localhost:3000/scan/john@example.com \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activity_name": "lunch",
+    "activity_category": "meal"
+  }'
+```
+
+`GET /scans`
+
+Returns activity statistics with optional filters.
+
+Query Parameters:
+
+- `min_frequency`: Filter by minimum scan count
+  - Must be a positive integer
+  - Returns activities with at least this many scans
+  - If omitted, no minimum limit
+- `max_frequency`: Filter by maximum scan count
+  - Must be a positive integer
+  - Returns activities with at most this many scans
+  - If omitted, no maximum limit
+- `activity_category`: Filter by category
+  - Returns activities in the specified category
+  - Common values: "meal", "workshop", "activity"
+  - If omitted, returns all categories
+
+Example Request:
+
+```
+/scans?min_frequency=30&activity_category=meal
+```
+
 Example Response:
 
 ```json
 {
-  "badge_code": "new-badge-code",
-  "email": "nancy02@example.com",
-  "is_checked_in": true,
-  "name": "Alan Smith",
-  "phone": "(267)834-3239",
-  "scans": [],
-  "updated_at": "2025-02-07T13:40:31-05:00"
+  "activities": [
+    {
+      "activity_category": "meal",
+      "activity_name": "friday_dinner",
+      "scan_count": 37
+    },
+    {
+      "activity_category": "meal",
+      "activity_name": "midnight_snack",
+      "scan_count": 32
+    }
+  ],
+  "cached_at": "2025-02-07T16:16:58-05:00",
+  "total_activities": 2
 }
 ```
 
-### Check-in Management
-
-#### PUT /checkin
+`PUT /checkin`
 
 Registers and checks in a new user. Returns 400 if user already exists.
 
@@ -206,23 +245,7 @@ curl -X PUT http://localhost:3000/checkin \
   }'
 ```
 
-Example Response:
-
-```json
-[
-  {
-    "badge_code": "HTN2024-123",
-    "email": "john@example.com",
-    "is_checked_in": true,
-    "name": "John Smith",
-    "phone": "+1555123456",
-    "scans": [],
-    "updated_at": "2025-02-07T13:41:31-05:00"
-  }
-]
-```
-
-#### PUT /checkout/<email>
+`PUT /checkout/<email>`
 
 Checks out a user. Returns 404 if user does not exist.
 
@@ -232,145 +255,38 @@ Example Request:
 curl -X PUT http://localhost:3000/checkout/john@example.com
 ```
 
-Example Response:
-
-```json
-[
-  {
-    "badge_code": "HTN2024-123",
-    "email": "john@example.com",
-    "is_checked_in": false,
-    "name": "John Smith",
-    "phone": "+1555123456",
-    "scans": [],
-    "updated_at": "2025-02-07T13:42:31-05:00"
-  }
-]
-```
-
-### Activity Management
-
-#### PUT /scan/<email>
-
-Records a new activity scan. Returns 404 if user does not exist.
-
-Example Request:
-
-```bash
-curl -X PUT http://localhost:3000/scan/john@example.com \
-  -H "Content-Type: application/json" \
-  -d '{
-    "activity_name": "lunch",
-    "activity_category": "meal"
-  }'
-```
-
-Example Response:
-
-```json
-{
-  "badge_code": "HTN2024-123",
-  "email": "john@example.com",
-  "is_checked_in": true,
-  "name": "John Smith",
-  "phone": "+1555123456",
-  "scans": [
-    {
-      "activity_category": "meal",
-      "activity_name": "lunch",
-      "scanned_at": "2025-02-07T13:43:31-05:00"
-    }
-  ],
-  "updated_at": "2025-02-07T13:43:31-05:00"
-}
-```
-
-#### GET /scans
-
-Returns activity statistics with optional filters.
-
-Query Parameters:
-
-- `min_frequency`: Minimum scan count
-- `max_frequency`: Maximum scan count
-- `activity_category`: Filter by category
-
-Example Request:
-
-```
-/scans?min_frequency=5&activity_category=meal
-```
-
-Example Response:
-
-```json
-{
-  "activities": [
-    {
-      "activity_name": "lunch",
-      "activity_category": "meal",
-      "scan_count": 10
-    },
-    {
-      "activity_name": "dinner",
-      "activity_category": "meal",
-      "scan_count": 8
-    }
-  ],
-  "total_activities": 2,
-  "cached_at": "2025-02-07T13:44:31-05:00"
-}
-```
-
 ## Important Decisions
 
 ### Data Model
 
 - Users identified by unique email
-- Activities created dynamically
-- Scans track participation with timestamps
-- Badge codes unique but reassignable
+- Badge codes unique but reassignable (in case of lost/stolen badges)
 - Check-in status managed through dedicated table
 - All timestamps in EST timezone (UTC-5)
 
-### Check-in Logic
-
-- Check-in status independent of scan history
-- Users can be checked in without any scans
-- Check-in status persists until explicit checkout
-- Only one active check-in per user
-- Check-in time recorded for auditing
-
 ### Performance
 
-- Cached analytics (5-min TTL)
+- Cached analytics on frequent queries such as `GET /scans` (5-min TTL)
 - SQLite indexes on common queries
 - Efficient partial updates
-- Transaction support
 
 ### Error Handling
 
 - Descriptive error messages
 - Appropriate HTTP status codes
-- Transaction rollbacks
 - Duplicate scan prevention
+- Duplicate user check-in prevention
 
 ## Assumptions
 
 - No auth required (would add in production)
-- SQLite sufficient for demo (would use PostgreSQL in prod)
-- One scan per activity per day is sufficient
-- Analytics can be slightly delayed (5-min cache)
-- Badge codes may need to be reassigned
 - Email addresses are permanent identifiers
+- Users will not be able to change their email as it is their unique identifier
 
 ## Future Improvements
 
 1. Authentication & authorization
-2. Rate limiting
-3. Comprehensive testing
-4. Activity management endpoints
-5. Swagger/OpenAPI documentation
-6. Monitoring & logging
-7. PostgreSQL for better concurrency
-8. Pagination for large requests (e.g. `GET/users`)
+2. Volunteer id to know the volunteer who checked in the user
+3. Pagination for large requests (e.g. `GET/users`)
+4. Automatic testing
+5. PostgreSQL for better concurrency

@@ -42,7 +42,6 @@ CHECKED_IN_TABLE = '''
 CREATE TABLE IF NOT EXISTS checked_in_users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     hacker_id INTEGER UNIQUE NOT NULL,
-    checked_in_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00'),
     FOREIGN KEY (hacker_id) REFERENCES hackers (id)
 )
 '''
