@@ -29,7 +29,8 @@ docker-compose up --build
 
 ## Database Schema
 
-The database consists of three main tables: Hackers, Activities, and Scans.
+The database consists of four main tables: Hackers, Activities, Scans, and
+Checked In Users.
 
 ### Hackers Table
 
@@ -62,10 +63,19 @@ The database consists of three main tables: Hackers, Activities, and Scans.
   - `hacker_id` references `hackers(id)`
   - `activity_id` references `activities(id)`
 
+### Checked In Users Table
+
+- `id` (int): Primary key, auto-incrementing identifier
+- `hacker_id` (int): Foreign key to Hackers table, unique
+- `checked_in_at` (timestamp): When user was checked in
+- Foreign Keys:
+  - `hacker_id` references `hackers(id)`
+
 ### Relationships
 
 - One-to-many between Hackers and Scans
 - One-to-many between Activities and Scans
+- One-to-one between Hackers and Checked In Users
 - Scans table acts as a join table tracking participation
 
 ## API Endpoints
@@ -314,15 +324,22 @@ Example Response:
 
 ## Important Decisions
 
-BLAHBALBHALBJAB
-
 ### Data Model
 
 - Users identified by unique email
 - Activities created dynamically
 - Scans track participation with timestamps
 - Badge codes unique but reassignable
-- Check-in status determined by presence of scans
+- Check-in status managed through dedicated table
+- All timestamps in EST timezone (UTC-5)
+
+### Check-in Logic
+
+- Check-in status independent of scan history
+- Users can be checked in without any scans
+- Check-in status persists until explicit checkout
+- Only one active check-in per user
+- Check-in time recorded for auditing
 
 ### Performance
 

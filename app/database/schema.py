@@ -38,6 +38,15 @@ CREATE TABLE IF NOT EXISTS scans (
 )
 '''
 
+CHECKED_IN_TABLE = '''
+CREATE TABLE IF NOT EXISTS checked_in_users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    hacker_id INTEGER UNIQUE NOT NULL,
+    checked_in_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00'),
+    FOREIGN KEY (hacker_id) REFERENCES hackers (id)
+)
+'''
+
 def init_db():
     with sqlite3.connect('/db/hackers.db') as conn:
         c = conn.cursor()
@@ -46,6 +55,7 @@ def init_db():
         c.execute(HACKERS_TABLE)
         c.execute(ACTIVITIES_TABLE)
         c.execute(SCANS_TABLE)
+        c.execute(CHECKED_IN_TABLE)
         
         # Create triggers
         for trigger in TRIGGERS:

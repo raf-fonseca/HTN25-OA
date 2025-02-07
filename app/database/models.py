@@ -11,13 +11,13 @@ def get_all_users(checked_in=None, order_by='name'):
     with sqlite3.connect('/db/hackers.db') as conn:
         c = conn.cursor()
         
-        # Base query - determine checked_in status from scan existence
+        # Base query - determine checked_in status from either scans or checked_in_users table
         query = '''
             SELECT h.name, h.email, h.phone, h.badge_code, h.updated_at,
-                   CASE WHEN COUNT(s.id) > 0 THEN TRUE ELSE FALSE END as is_checked_in,
-                   COUNT(s.id) as scan_count
+                   CASE WHEN COUNT(s.id) > 0 OR c.hacker_id IS NOT NULL THEN TRUE ELSE FALSE END as is_checked_in
             FROM hackers h
             LEFT JOIN scans s ON h.id = s.hacker_id
+            LEFT JOIN checked_in_users c ON h.id = c.hacker_id
             GROUP BY h.id
         '''
         
@@ -48,9 +48,13 @@ def get_user_by_email(email):
     with sqlite3.connect('/db/hackers.db') as conn:
         c = conn.cursor()
         c.execute('''
-            SELECT name, email, phone, badge_code, updated_at
-            FROM hackers
-            WHERE email = ?
+            SELECT h.name, h.email, h.phone, h.badge_code, h.updated_at,
+                   CASE WHEN COUNT(s.id) > 0 OR c.hacker_id IS NOT NULL THEN TRUE ELSE FALSE END as is_checked_in
+            FROM hackers h
+            LEFT JOIN scans s ON h.id = s.hacker_id
+            LEFT JOIN checked_in_users c ON h.id = c.hacker_id
+            WHERE h.email = ?
+            GROUP BY h.id
         ''', (email,))
         
         row = c.fetchone()
@@ -62,7 +66,8 @@ def get_user_by_email(email):
             email=row[1],
             phone=row[2],
             badge_code=row[3],
-            updated_at=row[4]
+            updated_at=row[4],
+            is_checked_in=bool(row[5])
         )
         user.scans = get_user_scans(email)
         return user
@@ -276,7 +281,7 @@ def checkin_user_db(data):
         c = conn.cursor()
         try:
             # Check if user already exists
-            c.execute('SELECT email FROM hackers WHERE email = ?', (data['email'],))
+            c.execute('SELECT id FROM hackers WHERE email = ?', (data['email'],))
             if c.fetchone():
                 raise ValueError(f"User with email {data['email']} is already registered")
 
@@ -291,8 +296,18 @@ def checkin_user_db(data):
                 VALUES (?, ?, ?, ?)
             ''', (data['name'], data['email'], data.get('phone'), data['badge_code']))
             
+            # Get the new user's ID
+            c.execute('SELECT id FROM hackers WHERE email = ?', (data['email'],))
+            hacker_id = c.fetchone()[0]
+            
+            # Check them in
+            c.execute('''
+                INSERT INTO checked_in_users (hacker_id)
+                VALUES (?)
+            ''', (hacker_id,))
+            
             conn.commit()
-
+            
             # Get the newly created user
             c.execute('''
                 SELECT name, email, phone, badge_code, updated_at
@@ -307,10 +322,9 @@ def checkin_user_db(data):
                 phone=row[2],
                 badge_code=row[3],
                 updated_at=row[4],
-                is_checked_in=True
+                is_checked_in=True  # Always true for new registrations
             )
             
-            # Return list with single user for consistent API response
             return [user]
             
         except Exception as e:
@@ -321,31 +335,17 @@ def checkout_user_db(email):
     with sqlite3.connect('/db/hackers.db') as conn:
         c = conn.cursor()
         try:
-            # Check if user exists
+            # Get user ID
             c.execute('SELECT id FROM hackers WHERE email = ?', (email,))
-            if not c.fetchone():
+            row = c.fetchone()
+            if not row:
                 raise ValueError('User not found')
             
-            # Get all users with the checked out user having is_checked_in=False
-            c.execute('''
-                SELECT name, email, phone, badge_code, updated_at
-                FROM hackers
-                ORDER BY updated_at DESC
-            ''')
+            # Remove from checked_in_users
+            c.execute('DELETE FROM checked_in_users WHERE hacker_id = ?', (row[0],))
             
-            row = c.fetchone()
-            user = User(
-                name=row[0],
-                email=row[1],
-                phone=row[2],
-                badge_code=row[3],
-                updated_at=row[4],
-                is_checked_in=False
-            )
-            
-            # Return list with single user for consistent API response
-            return [user]
-            
+            conn.commit()
+            return get_all_users(order_by='updated_at DESC')
             
         except Exception as e:
             conn.rollback()
