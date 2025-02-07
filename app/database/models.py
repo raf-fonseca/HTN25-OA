@@ -345,7 +345,26 @@ def checkout_user_db(email):
             c.execute('DELETE FROM checked_in_users WHERE hacker_id = ?', (row[0],))
             
             conn.commit()
-            return get_all_users(order_by='updated_at DESC')
+
+            # Get the user's updated info
+            c.execute('''
+                SELECT name, email, phone, badge_code, updated_at
+                FROM hackers
+                WHERE email = ?
+            ''', (email,))
+            
+            row = c.fetchone()
+            user = User(
+                name=row[0],
+                email=row[1],
+                phone=row[2],
+                badge_code=row[3],
+                updated_at=row[4],
+                is_checked_in=False  # Set to False since we just checked them out
+            )
+            user.scans = get_user_scans(email)
+            
+            return [user]  # Keep list format for API consistency
             
         except Exception as e:
             conn.rollback()
