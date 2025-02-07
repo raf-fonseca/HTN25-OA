@@ -1,10 +1,12 @@
 class User:
-    def __init__(self, name, email, phone, badge_code, updated_at, scans=None):
+    def __init__(self, name, email, phone, badge_code, updated_at, 
+                 is_checked_in=False, scans=None):
         self.name = name
         self.email = email
         self.phone = phone
         self.badge_code = badge_code
         self.updated_at = updated_at
+        self.is_checked_in = is_checked_in
         self.scans = scans or []
     
     def to_dict(self):
@@ -14,6 +16,7 @@ class User:
             'phone': self.phone,
             'badge_code': self.badge_code,
             'updated_at': self.updated_at,
+            'is_checked_in': self.is_checked_in,
             'scans': [scan.to_dict() for scan in self.scans]
         }
 

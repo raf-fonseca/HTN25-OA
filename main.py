@@ -1,5 +1,5 @@
 from flask import Flask, jsonify, request
-from app.database.models import get_all_users, get_user_by_email, update_user, create_scan, get_scan_statistics
+from app.database.models import get_all_users, get_user_by_email, update_user, create_scan, get_scan_statistics, checkin_user_db, checkout_user_db
 from app.database.schema import init_db
 import sqlite3
 from datetime import datetime
@@ -34,7 +34,7 @@ def update_user_route(email):
         updated_user = update_user(email, data)
         return jsonify(updated_user.to_dict())
     except ValueError as e:
-        return jsonify({'error': str(e)}), 404
+        return jsonify({'error': str(e)}), 400
 
 @app.route('/scan/<email>', methods=['PUT'])
 def scan_route(email):
@@ -76,6 +76,34 @@ def get_scan_stats():
     except Exception as e:
         return jsonify({'error': str(e)}), 400
 
+@app.route('/checkin', methods=['PUT'])
+def checkin_user():
+    data = request.get_json()
+    try:
+        # Validate required fields
+        required = ['name', 'email', 'badge_code']
+        if not all(field in data for field in required):
+            return jsonify({'error': 'Name, email, and badge code are required'}), 400
+            
+        users = checkin_user_db(data)
+        # Convert User objects to dictionaries before jsonifying
+        return jsonify([user.to_dict() for user in users])
+                
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/checkout/<email>', methods=['PUT'])
+def checkout_user(email):
+    try:
+        users = checkout_user_db(email)
+        return jsonify([user.to_dict() for user in users])
+                
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
 
 # Initialize database when the app starts
 init_db()

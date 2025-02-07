@@ -7,13 +7,14 @@ _stats_cache = {
     'last_updated': None
 }
 
-def get_all_users(checked_in=None):
+def get_all_users(checked_in=None, order_by='name'):
     with sqlite3.connect('/db/hackers.db') as conn:
         c = conn.cursor()
         
-        # Base query
+        # Base query - determine checked_in status from scan existence
         query = '''
             SELECT h.name, h.email, h.phone, h.badge_code, h.updated_at,
+                   CASE WHEN COUNT(s.id) > 0 THEN TRUE ELSE FALSE END as is_checked_in,
                    COUNT(s.id) as scan_count
             FROM hackers h
             LEFT JOIN scans s ON h.id = s.hacker_id
@@ -22,12 +23,9 @@ def get_all_users(checked_in=None):
         
         # Add checked_in filter if specified
         if checked_in is not None:
-            if checked_in:
-                query += ' HAVING scan_count > 0'
-            else:
-                query += ' HAVING scan_count = 0'
+            query += f' HAVING is_checked_in = {1 if checked_in else 0}'
                 
-        query += ' ORDER BY h.name'
+        query += f' ORDER BY {order_by}'
         
         c.execute(query)
         
@@ -38,7 +36,8 @@ def get_all_users(checked_in=None):
                 email=row[1],
                 phone=row[2],
                 badge_code=row[3],
-                updated_at=row[4]
+                updated_at=row[4],
+                is_checked_in=bool(row[5])
             )
             user.scans = get_user_scans(user.email)
             users.append(user)
@@ -110,11 +109,15 @@ def update_user(email, data):
             params.append(data['phone'])
             
         if 'badge_code' in data:
-            # First check if the new badge code is not assigned to another user
-            c.execute('SELECT id FROM hackers WHERE badge_code = ?', (data['badge_code'],))
-            if c.fetchone() is not None:
-                raise ValueError(f"Badge code {data['badge_code']} is already in use")
-                
+            # Check if the badge code is different from user's current one
+            c.execute('SELECT badge_code FROM hackers WHERE email = ?', (email,))
+            current_badge = c.fetchone()
+            if current_badge and current_badge[0] != data['badge_code']:
+                # Only check for conflicts if badge code is actually changing
+                c.execute('SELECT id FROM hackers WHERE badge_code = ?', (data['badge_code'],))
+                if c.fetchone() is not None:
+                    raise ValueError(f"Badge code {data['badge_code']} is already in use")
+            
             update_fields.append('badge_code = ?')
             params.append(data['badge_code'])
             
@@ -150,7 +153,8 @@ def update_user(email, data):
                 email=row[1],
                 phone=row[2],
                 badge_code=row[3],
-                updated_at=row[4]
+                updated_at=row[4],
+                is_checked_in=True  # Set to True since they're registered
             )
             user.scans = get_user_scans(email)
             return user
@@ -263,3 +267,83 @@ def get_scan_statistics(min_frequency=None, max_frequency=None, activity_categor
         filtered_data = [d for d in filtered_data if d['activity_category'] == activity_category]
     
     return filtered_data
+
+def checkin_user_db(data):
+    with sqlite3.connect('/db/hackers.db') as conn:
+        c = conn.cursor()
+        try:
+            # Check if user already exists
+            c.execute('SELECT email FROM hackers WHERE email = ?', (data['email'],))
+            if c.fetchone():
+                raise ValueError(f"User with email {data['email']} is already registered")
+
+            # Check if badge code is already in use
+            c.execute('SELECT email FROM hackers WHERE badge_code = ?', (data['badge_code'],))
+            if c.fetchone():
+                raise ValueError(f"Badge code {data['badge_code']} is already in use")
+
+            # Create new user
+            c.execute('''
+                INSERT INTO hackers (name, email, phone, badge_code)
+                VALUES (?, ?, ?, ?)
+            ''', (data['name'], data['email'], data.get('phone'), data['badge_code']))
+            
+            conn.commit()
+
+            # Get the newly created user
+            c.execute('''
+                SELECT name, email, phone, badge_code, updated_at
+                FROM hackers
+                WHERE email = ?
+            ''', (data['email'],))
+            
+            row = c.fetchone()
+            user = User(
+                name=row[0],
+                email=row[1],
+                phone=row[2],
+                badge_code=row[3],
+                updated_at=row[4],
+                is_checked_in=True
+            )
+            
+            # Return list with single user for consistent API response
+            return [user]
+            
+        except Exception as e:
+            conn.rollback()
+            raise e
+
+def checkout_user_db(email):
+    with sqlite3.connect('/db/hackers.db') as conn:
+        c = conn.cursor()
+        try:
+            # Check if user exists
+            c.execute('SELECT id FROM hackers WHERE email = ?', (email,))
+            if not c.fetchone():
+                raise ValueError('User not found')
+            
+            # Get all users with the checked out user having is_checked_in=False
+            c.execute('''
+                SELECT name, email, phone, badge_code, updated_at
+                FROM hackers
+                ORDER BY updated_at DESC
+            ''')
+            
+            row = c.fetchone()
+            user = User(
+                name=row[0],
+                email=row[1],
+                phone=row[2],
+                badge_code=row[3],
+                updated_at=row[4],
+                is_checked_in=False
+            )
+            
+            # Return list with single user for consistent API response
+            return [user]
+            
+            
+        except Exception as e:
+            conn.rollback()
+            raise e
