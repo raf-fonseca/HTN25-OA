@@ -12,7 +12,12 @@ def hello_world():
 
 @app.route('/users', methods=['GET'])
 def get_users():
-    users = get_all_users()
+    # Parse checked_in parameter
+    checked_in = request.args.get('checked_in')
+    if checked_in is not None:
+        checked_in = checked_in.lower() == 'true'
+    
+    users = get_all_users(checked_in=checked_in)
     return jsonify([user.to_dict() for user in users])
 
 @app.route('/users/<email>', methods=['GET'])

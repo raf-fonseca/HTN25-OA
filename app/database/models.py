@@ -7,14 +7,29 @@ _stats_cache = {
     'last_updated': None
 }
 
-def get_all_users():
+def get_all_users(checked_in=None):
     with sqlite3.connect('/db/hackers.db') as conn:
         c = conn.cursor()
-        c.execute('''
-            SELECT name, email, phone, badge_code, updated_at
-            FROM hackers
-            ORDER BY name
-        ''')
+        
+        # Base query
+        query = '''
+            SELECT h.name, h.email, h.phone, h.badge_code, h.updated_at,
+                   COUNT(s.id) as scan_count
+            FROM hackers h
+            LEFT JOIN scans s ON h.id = s.hacker_id
+            GROUP BY h.id
+        '''
+        
+        # Add checked_in filter if specified
+        if checked_in is not None:
+            if checked_in:
+                query += ' HAVING scan_count > 0'
+            else:
+                query += ' HAVING scan_count = 0'
+                
+        query += ' ORDER BY h.name'
+        
+        c.execute(query)
         
         users = []
         for row in c.fetchall():
@@ -183,18 +198,12 @@ def create_scan(email, data):
             c.execute('''
                 INSERT INTO scans (hacker_id, activity_id, scanned_at)
                 VALUES (?, ?, datetime('now'))
-                RETURNING scanned_at
             ''', (hacker[0], activity_id))
-            
-            scanned_at = c.fetchone()[0]
             
             conn.commit()
             
-            return {
-                'activity_name': data['activity_name'],
-                'activity_category': data['activity_category'],
-                'scanned_at': scanned_at
-            }
+            # Return complete user data including new scan
+            return get_user_by_email(email).to_dict()
             
         except Exception as e:
             conn.rollback()

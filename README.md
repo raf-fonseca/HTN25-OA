@@ -72,7 +72,17 @@ The database consists of three main tables: Hackers, Activities, and Scans.
 
 #### `GET /users`
 
-Returns list of all users with their scan history.
+Returns list of all users with their scan history. Supports filtering by
+check-in status.
+
+Query Parameters:
+
+- `checked_in` (boolean): Filter users by check-in status
+  - `true`: Returns only users who have at least one scan
+  - `false`: Returns only users with no scans
+  - If omitted, returns all users
+
+Example: `/users?checked_in=true`
 
 #### GET /users/<email>
 
@@ -111,9 +121,18 @@ Returns:
 
 ```json
 {
-  "activity_name": "Lunch",
-  "activity_category": "meal",
-  "scanned_at": "2024-02-05 15:30:00"
+  "name": "John Smith",
+  "email": "john@example.com",
+  "phone": "+1 (555) 123-4567",
+  "badge_code": "new-badge-code",
+  "updated_at": "2024-02-05 15:30:00",
+  "scans": [
+    {
+      "activity_name": "Lunch",
+      "activity_category": "meal",
+      "scanned_at": "2024-02-05 15:30:00"
+    }
+  ]
 }
 ```
 
@@ -141,6 +160,7 @@ Example: `/scans?min_frequency=5&activity_category=meal`
 - Activities created dynamically
 - Scans track participation with timestamps
 - Badge codes unique but reassignable
+- Check-in status determined by presence of scans
 
 ### Performance
 
