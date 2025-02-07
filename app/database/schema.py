@@ -1,6 +1,7 @@
 import sqlite3
 from app.database.triggers import TRIGGERS
 from app.utils.data_loader import load_example_data
+from datetime import datetime
 
 # Database table definitions
 HACKERS_TABLE = '''
@@ -10,8 +11,8 @@ CREATE TABLE IF NOT EXISTS hackers (
     email TEXT UNIQUE NOT NULL,
     phone TEXT,
     badge_code TEXT UNIQUE,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00'),
+    created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00')
 )
 '''
 
@@ -21,7 +22,7 @@ CREATE TABLE IF NOT EXISTS activities (
     activity_name TEXT UNIQUE NOT NULL,
     activity_category TEXT NOT NULL,
     is_active BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00')
 )
 '''
 
@@ -30,8 +31,8 @@ CREATE TABLE IF NOT EXISTS scans (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     hacker_id INTEGER NOT NULL,
     activity_id INTEGER NOT NULL,
-    scanned_at TIMESTAMP NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    scanned_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00'),
+    created_at TEXT DEFAULT (strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00'),
     FOREIGN KEY (hacker_id) REFERENCES hackers (id),
     FOREIGN KEY (activity_id) REFERENCES activities (id)
 )

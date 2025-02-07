@@ -201,7 +201,7 @@ def create_scan(email, data):
             # Create scan with current timestamp
             c.execute('''
                 INSERT INTO scans (hacker_id, activity_id, scanned_at)
-                VALUES (?, ?, datetime('now'))
+                VALUES (?, ?, strftime('%Y-%m-%dT%H:%M:%S', datetime('now', '-5 hours')) || '-05:00')
             ''', (hacker[0], activity_id))
             
             conn.commit()
@@ -219,11 +219,12 @@ def get_scan_statistics(min_frequency=None, max_frequency=None, activity_categor
     global _stats_cache
     
     # Check if we have valid cached data
-    now = datetime.now()
+    now = datetime.utcnow() - timedelta(hours=5)  # Convert to EST
     if (_stats_cache['data'] is not None and 
         _stats_cache['last_updated'] is not None and 
         now - _stats_cache['last_updated'] < timedelta(minutes=cache_duration_minutes)):
         data = _stats_cache['data']
+        cached_at = _stats_cache['last_updated']
     else:
         # Cache miss or expired, fetch new data
         with sqlite3.connect('/db/hackers.db') as conn:
@@ -250,9 +251,10 @@ def get_scan_statistics(min_frequency=None, max_frequency=None, activity_categor
                 for row in c.fetchall()
             ]
             
-            # Update cache
+            # Update cache with new data and timestamp
             _stats_cache['data'] = data
             _stats_cache['last_updated'] = now
+            cached_at = now
     
     # Apply filters to cached data
     filtered_data = data
@@ -266,7 +268,8 @@ def get_scan_statistics(min_frequency=None, max_frequency=None, activity_categor
     if activity_category is not None:
         filtered_data = [d for d in filtered_data if d['activity_category'] == activity_category]
     
-    return filtered_data
+    # Return with EST timezone indicator
+    return filtered_data, cached_at.strftime('%Y-%m-%dT%H:%M:%S') + '-05:00'
 
 def checkin_user_db(data):
     with sqlite3.connect('/db/hackers.db') as conn:

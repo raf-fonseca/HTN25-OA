@@ -61,7 +61,7 @@ def get_scan_stats():
         max_frequency = request.args.get('max_frequency', type=int)
         activity_category = request.args.get('activity_category')
 
-        stats = get_scan_statistics(
+        stats, cached_at = get_scan_statistics(
             min_frequency=min_frequency,
             max_frequency=max_frequency,
             activity_category=activity_category
@@ -70,7 +70,7 @@ def get_scan_stats():
         return jsonify({
             'activities': stats,
             'total_activities': len(stats),
-            'cached_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'cached_at': cached_at
         })
 
     except Exception as e:

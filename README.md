@@ -70,89 +70,251 @@ The database consists of three main tables: Hackers, Activities, and Scans.
 
 ## API Endpoints
 
-#### `GET /users`
+`GET /users`
 
 Returns list of all users with their scan history. Supports filtering by
 check-in status.
 
 Query Parameters:
 
-- `checked_in` (boolean): Filter users by check-in status
-  - `true`: Returns only users who have at least one scan
-  - `false`: Returns only users with no scans
+- `checked_in`: Filter by check-in status
+  - `true`: Returns only users who have checked in
+  - `false`: Returns only users who have not checked in
   - If omitted, returns all users
 
-Example: `/users?checked_in=true`
+Example Request:
 
-#### GET /users/<email>
+```
+/users?checked_in=true
+```
 
-Returns specific user's data and scan history.
+Example Response:
+
+```json
+[
+  {
+    "badge_code": "soon-hundred-rise-program",
+    "email": "nancy02@example.com",
+    "is_checked_in": true,
+    "name": "Alan Johnson",
+    "phone": "(267)834-3238",
+    "scans": [
+      {
+        "activity_category": "meal",
+        "activity_name": "sunday_breakfast",
+        "scanned_at": "2025-01-17T03:47:43-05:00"
+      }
+    ],
+    "updated_at": "2025-02-07T13:39:31-05:00"
+  }
+  ...
+]
+```
+
+`GET /users/<email>`
+
+Returns specific user's data and scan history. Returns 404 if user does not
+exist.
+
+Example Request:
+
+```
+/users/fward@example.org
+```
+
+Example Response:
+
+```json
+{
+  "badge_code": "laugh-resource-apply-staff",
+  "email": "fward@example.org",
+  "is_checked_in": false,
+  "name": "Amanda Hicks",
+  "phone": "001-624-335-0468x678",
+  "scans": [
+    {
+      "activity_category": "activity",
+      "activity_name": "opening_ceremony",
+      "scanned_at": "2025-01-18T11:09:59.389324"
+    },
+    {
+      "activity_category": "meal",
+      "activity_name": "friday_dinner",
+      "scanned_at": "2025-01-19T15:07:23.944351"
+    }
+  ],
+  "updated_at": "2025-02-07T13:39:31-05:00"
+}
+```
 
 #### PUT /users/<email>
 
-Updates user information. Accepts:
+Updates user information. Returns 404 if user does not exist.
+
+Example Request:
+
+```bash
+curl -X PUT http://localhost:3000/users/nancy02@example.com \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Alan Smith",
+    "phone": "(267)834-3239",
+    "badge_code": "new-badge-code"
+  }'
+```
+
+Example Response:
 
 ```json
 {
-  "name": "John Smith",
-  "phone": "+1 (555) 123-4567",
-  "badge_code": "new-badge-code"
+  "badge_code": "new-badge-code",
+  "email": "nancy02@example.com",
+  "is_checked_in": true,
+  "name": "Alan Smith",
+  "phone": "(267)834-3239",
+  "scans": [],
+  "updated_at": "2025-02-07T13:40:31-05:00"
 }
 ```
 
-- Email cannot be modified
-- Badge codes must be unique
-- All fields optional (partial updates supported)
+### Check-in Management
 
-### Activity Scanning
+#### PUT /checkin
+
+Registers and checks in a new user. Returns 400 if user already exists.
+
+Example Request:
+
+```bash
+curl -X PUT http://localhost:3000/checkin \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "John Smith",
+    "email": "john@example.com",
+    "phone": "+1555123456",
+    "badge_code": "HTN2024-123"
+  }'
+```
+
+Example Response:
+
+```json
+[
+  {
+    "badge_code": "HTN2024-123",
+    "email": "john@example.com",
+    "is_checked_in": true,
+    "name": "John Smith",
+    "phone": "+1555123456",
+    "scans": [],
+    "updated_at": "2025-02-07T13:41:31-05:00"
+  }
+]
+```
+
+#### PUT /checkout/<email>
+
+Checks out a user. Returns 404 if user does not exist.
+
+Example Request:
+
+```bash
+curl -X PUT http://localhost:3000/checkout/john@example.com
+```
+
+Example Response:
+
+```json
+[
+  {
+    "badge_code": "HTN2024-123",
+    "email": "john@example.com",
+    "is_checked_in": false,
+    "name": "John Smith",
+    "phone": "+1555123456",
+    "scans": [],
+    "updated_at": "2025-02-07T13:42:31-05:00"
+  }
+]
+```
+
+### Activity Management
 
 #### PUT /scan/<email>
 
-Records a new activity scan. Accepts:
+Records a new activity scan. Returns 404 if user does not exist.
 
-```json
-{
-  "activity_name": "Lunch",
-  "activity_category": "meal"
-}
+Example Request:
+
+```bash
+curl -X PUT http://localhost:3000/scan/john@example.com \
+  -H "Content-Type: application/json" \
+  -d '{
+    "activity_name": "lunch",
+    "activity_category": "meal"
+  }'
 ```
 
-Returns:
+Example Response:
 
 ```json
 {
-  "name": "John Smith",
+  "badge_code": "HTN2024-123",
   "email": "john@example.com",
-  "phone": "+1 (555) 123-4567",
-  "badge_code": "new-badge-code",
-  "updated_at": "2024-02-05 15:30:00",
+  "is_checked_in": true,
+  "name": "John Smith",
+  "phone": "+1555123456",
   "scans": [
     {
-      "activity_name": "Lunch",
       "activity_category": "meal",
-      "scanned_at": "2024-02-05 15:30:00"
+      "activity_name": "lunch",
+      "scanned_at": "2025-02-07T13:43:31-05:00"
     }
-  ]
+  ],
+  "updated_at": "2025-02-07T13:43:31-05:00"
 }
 ```
-
-- One scan per activity per user per day
-- Creates new activities automatically
-- Updates user's last activity timestamp
-
-### Analytics
 
 #### GET /scans
 
-Returns activity statistics with optional filters:
+Returns activity statistics with optional filters.
+
+Query Parameters:
 
 - `min_frequency`: Minimum scan count
 - `max_frequency`: Maximum scan count
 - `activity_category`: Filter by category
 
-Example: `/scans?min_frequency=5&activity_category=meal`
+Example Request:
 
-## Design Decisions
+```
+/scans?min_frequency=5&activity_category=meal
+```
+
+Example Response:
+
+```json
+{
+  "activities": [
+    {
+      "activity_name": "lunch",
+      "activity_category": "meal",
+      "scan_count": 10
+    },
+    {
+      "activity_name": "dinner",
+      "activity_category": "meal",
+      "scan_count": 8
+    }
+  ],
+  "total_activities": 2,
+  "cached_at": "2025-02-07T13:44:31-05:00"
+}
+```
+
+## Important Decisions
+
+BLAHBALBHALBJAB
 
 ### Data Model
 
