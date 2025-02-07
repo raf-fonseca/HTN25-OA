@@ -1,0 +1,111 @@
+{
+	"info": {
+		"_postman_id": "95daeb9d-6189-401f-9844-c0dd672b4c5e",
+		"name": "HTN",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json",
+		"_exporter_id": "40286724"
+	},
+	"item": [
+		{
+			"name": "All users",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:3000/users",
+				"description": "Generated from cURL: curl http://localhost:3000/users"
+			},
+			"response": []
+		},
+		{
+			"name": "User by email",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": "http://localhost:3000/users/john@example.com",
+				"description": "Generated from cURL: curl http://localhost:3000/users/john@example.com"
+			},
+			"response": []
+		},
+		{
+			"name": "Update user info ",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    // \"name\": \"John Smith 123\"\n    // \"phone\": \"+1 (555) 123 4567\"\n    \"email\": \"example@gmail.com\"\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:3000/users/{{email}}",
+				"description": "Generated from cURL: curl -X PUT http://localhost:3000/users/john@example.com \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"name\": \"John Smith\", \"phone\": \"+1 (555) 123 4567\"}'"
+			},
+			"response": []
+		},
+		{
+			"name": "New scan ",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"activity_name\": \"Lunch\",\n    \"activity_category\": \"meal\"\n  }",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": "http://localhost:3000/scan/john@example.com",
+				"description": "Generated from cURL: curl -X PUT http://localhost:3000/scan/john@example.com \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\n    \"activity_name\": \"Lunch\",\n    \"activity_category\": \"meal\"\n  }'"
+			},
+			"response": []
+		},
+		{
+			"name": "Scan data ",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:3000/scans?min_frequency=5",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "3000",
+					"path": [
+						"scans"
+					],
+					"query": [
+						{
+							"key": "min_frequency",
+							"value": "5"
+						}
+					]
+				},
+				"description": "Generated from cURL: curl http://localhost:3000/scans?min_frequency=5"
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "email",
+			"value": "fward@example.org",
+			"type": "default"
+		}
+	]
+}
